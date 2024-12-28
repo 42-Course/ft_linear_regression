@@ -1,0 +1,7 @@
+[package]
+name = "predictor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+linear_regression = { path = "../linear_regression" }
