@@ -1,29 +1,36 @@
-// use std::fs::File;
-// use std::io::Write;
-use csv::ReaderBuilder;
+use std::thread::sleep;
+use std::time::Duration;
+use linear_regression::linear_regression::LinearRegression;
+use linear_regression::utils::save_params;
+use indicatif::{ProgressBar, ProgressStyle};
+use std::error::Error;
 
-fn main() {
-    let mut rdr = ReaderBuilder::new()
-        .has_headers(true)
-        .from_path("../data/dataset.csv")
-        .expect("Failed to load dataset");
+fn main() -> Result<(), Box<dyn Error>> {
+  let mut model = LinearRegression::new(Some(0.001))?;
 
-    let mut x = Vec::new();
-    let mut y = Vec::new();
+  let iterations = 42;
 
-    for result in rdr.records() {
-        let record = result.expect("Error reading record");
-        x.push(record[0].parse::<f64>().unwrap());
-        y.push(record[1].parse::<f64>().unwrap());
-    }
+  let pb = ProgressBar::new(iterations);
+  pb.set_style(
+    ProgressStyle::default_bar()
+    .template("{spinner:.green} Calculating price... [{bar:40.cyan/blue}] {pos}%")
+      .unwrap()
+      .progress_chars("##-"),
+  );
 
-    // let (theta0, theta1) = linear_regression::gradient_descent(&x, &y, 0.01, 1000);
+  for i in 0..iterations {
+    model.train(1);
+    pb.set_position(i);
+  }
+  sleep(Duration::from_millis(42));
+  pb.set_position(iterations);
 
-    // let mut file = File::create("../data/model.json").expect("Unable to create model file");
-    // write!(
-    //     file,
-    //     r#"{{"theta0": {}, "theta1": {}}}"#,
-    //     theta0, theta1
-    // )
-    // .expect("Failed to write model file");
+  let (theta0, theta1) = model.get_params();
+  save_params(theta0, theta1)?;
+
+  println!(
+    "Training complete! Parameters saved:\nθ₀ = {:.4}\nθ₁ = {:.4}",
+    theta0, theta1
+  );
+  Ok(())
 }

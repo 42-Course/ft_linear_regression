@@ -4,4 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-csv = "1.3.1"
+indicatif = "0.17"
+linear_regression = { path = "../linear_regression" }
