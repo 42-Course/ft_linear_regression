@@ -1,38 +1,29 @@
-use eframe::egui::{self, CentralPanel};
-use egui_plotter::EguiBackend;
-use linear_regression::linear_regression::LinearRegression;
+use crate::app::egui::Visuals;
+use eframe::egui;
 use crate::settings::{GridSettings, PlotSettings, SidebarSettings, SidebarTab};
-use crate::components::{Navbar, Sidebar, Plot};
+use crate::components::{Navbar, Plane, Sidebar};
+use linear_regression::linear_regression::LinearRegression;
 
-/// We derive Deserialize/Serialize so we can persist app state on shutdown.
-#[derive(serde::Deserialize, serde::Serialize)]
-#[serde(default)] // if we add new fields, give them default values when deserializing old state
-
-
-#[derive(Default)]
 pub struct App {
   show_sidebar: bool,
   pub regression_model: Option<LinearRegression>, // LinearRegression instance
   pub predictions: Vec<(f64, f64)>,               // Predictions for dataset
-  pub regression_line: Option<(f64, f64)>,
+  pub regression_line: Option<(f64, f64)>,        // θ₀ and θ₁
   pub sidebar_settings: SidebarSettings,
   pub grid_settings: GridSettings,
   pub plot_settings: PlotSettings,
+  pub plane: Plane,
 }
 
 impl App {
-  /// App constructor.
   pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
     let context = &cc.egui_ctx;
 
     context.tessellation_options_mut(|tess_options| {
       tess_options.feathering = false;
     });
-
-    // Load previous app state (if any).
-    if let Some(storage) = cc.storage {
-      return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
-    }
+    
+    context.set_visuals(Visuals::dark());
 
     let model = LinearRegression::new(None).ok();
     Self {
@@ -43,9 +34,12 @@ impl App {
       sidebar_settings: SidebarSettings::default(),
       grid_settings: GridSettings::new(),
       plot_settings: PlotSettings::new(),
+      plane: Plane::new(), 
     }
   }
+}
 
+impl App {
   /// Reloads the LinearRegression model and updates the state.
   pub fn reload_model(&mut self) {
     match LinearRegression::new(Some(0.01)) {
@@ -65,18 +59,6 @@ impl App {
     if let Some(model) = &mut self.regression_model {
       model.train(1000); // Train for 1000 iterations
       self.update_from_model();
-    }
-  }
-
-  /// Updates predictions and regression line from the model.
-  fn update_from_model(&mut self) {
-    if let Some(model) = &self.regression_model {
-      self.predictions = model
-        .get_dataset()
-        .iter()
-        .map(|&(x, _)| (x, model.predict(x)))
-        .collect();
-      self.regression_line = Some(model.get_params());
     }
   }
 
@@ -100,7 +82,6 @@ impl App {
     self.sidebar_settings.current_tab
   }
 
-  // Function to change tab
   pub fn set_sidebar_current_tab(&mut self, tab: SidebarTab) {
     self.sidebar_settings.current_tab = tab
   }
@@ -119,57 +100,33 @@ impl App {
   pub fn get_regression_line(&self) -> Option<(f64, f64)> {
     self.regression_line
   }
+
+  /// Updates predictions and regression line from the model.
+  fn update_from_model(&mut self) {
+    if let Some(model) = &self.regression_model {
+      self.predictions = model
+        .get_dataset()
+        .iter()
+        .map(|&(x, _)| (x, model.predict(x)))
+        .collect();
+      self.regression_line = Some(model.get_params());
+    }
+  }
 }
 
 impl eframe::App for App {
-  /// Called by the frame work to save state before shutdown.
-  fn save(&mut self, storage: &mut dyn eframe::Storage) {
-    eframe::set_value(storage, eframe::APP_KEY, self);
-  }
-
-  /// Called each time the UI needs repainting, which may be many times per second.
   fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
     egui::TopBottomPanel::top("navbar").show(ctx, |ui| {
       Navbar::render(ui, self);
     });
 
     egui::SidePanel::right("sidebar")
-      .show_animated(ctx, !self.show_sidebar, |ui| {
+      .show_animated(ctx, self.show_sidebar, |ui| {
         Sidebar::render(ui, self);
     });
 
-    // Plot::render(ctx, self);
+    // println!("\n[{:?}]\n", self.regression_model.as_ref().unwrap().get_dataset());
 
-
-    // CentralPanel::default().show(ctx, |ui| {
-      // let root = EguiBackend::new(ui).into_drawing_area();
-      // root.fill(&WHITE).unwrap();
-      // let mut chart = ChartBuilder::on(&root)
-      //   .caption("y=x^2", ("sans-serif", 50).into_font())
-      //   .margin(5)
-      //   .x_label_area_size(30)
-      //   .y_label_area_size(30)
-      //   .build_cartesian_2d(-1f32..1f32, -0.1f32..1f32)
-      //   .unwrap();
-
-      // chart.configure_mesh().draw().unwrap();
-
-    // });
+    self.plane.render(ctx, self);
   }
 }
-
-// egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-//   egui::menu::bar(ui, |ui| {
-//     let is_web = cfg!(target_arch = "wasm32");
-//     if !is_web {
-//       ui.menu_button("File", |ui| {
-//         if ui.button("Quit").clicked() {
-//           ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-//         }
-//       });
-//       ui.add_space(16.0);
-//     }
-
-//     egui::widgets::global_theme_preference_buttons(ui);
-//   });
-// });

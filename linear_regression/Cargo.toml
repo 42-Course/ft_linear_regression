@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 dotenv = "0.15"
 csv = "1.2"
+serde = { version = "1", features = ["derive"] }

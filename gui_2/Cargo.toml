@@ -1,0 +1,11 @@
+[package]
+name = "gui_2"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eframe = "0.22"
+plotters = "0.3.7"
+egui-plotter = "0.3"
+num-format = "0.4"
+linear_regression = { path = "../linear_regression" }

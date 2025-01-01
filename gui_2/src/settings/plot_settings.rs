@@ -1,6 +1,3 @@
-use serde::{Serialize, Deserialize};
-
-#[derive(Default, Serialize, Deserialize)]
 pub struct PlotSettings {
   pub dataset_color: [f32; 3],
   pub prediction_color: [f32; 3],

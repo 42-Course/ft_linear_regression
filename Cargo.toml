@@ -5,4 +5,6 @@ members = [
     "predictor",
     "trainer",
     "gui",
-    "linear_regression"]
+    "gui_2",
+    "linear_regression",
+]

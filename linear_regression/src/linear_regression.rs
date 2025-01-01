@@ -1,6 +1,7 @@
 use crate::utils::{load_dataset};
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct LinearRegression {
   theta0: f64,
   theta1: f64,

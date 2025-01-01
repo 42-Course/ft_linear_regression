@@ -1,6 +1,3 @@
-use serde::{Serialize, Deserialize};
-
-#[derive(Default, Serialize, Deserialize)]
 pub struct GridSettings {
   pub background_color: [f32; 3],
   pub show_grid: bool,

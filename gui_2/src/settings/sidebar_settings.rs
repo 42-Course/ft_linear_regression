@@ -1,12 +1,9 @@
-use serde::{Serialize, Deserialize};
-
-#[derive(PartialEq, Clone, Copy, Serialize, Deserialize)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum SidebarTab {
   GridSettings,
   PlotSettings,
 }
 
-#[derive(Serialize, Deserialize)]
 pub struct SidebarSettings {
   pub current_tab: SidebarTab,
 }

@@ -1,7 +1,7 @@
 mod navbar;
-mod plot;
+mod plane;
 mod sidebar;
 
 pub use navbar::Navbar;
-pub use plot::Plot;
+pub use plane::Plane;
 pub use sidebar::Sidebar;
