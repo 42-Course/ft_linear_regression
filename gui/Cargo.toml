@@ -20,8 +20,8 @@ eframe = { version = "0.30", default-features = false, features = [
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
 plotters = "0.3.7"
-egui-plotter = "0.3"
 num-format = "0.4"
+egui_plot = "0.30.0"
 linear_regression = { path = "../linear_regression" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

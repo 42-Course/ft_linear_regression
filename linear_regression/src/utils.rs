@@ -8,8 +8,15 @@ use csv::ReaderBuilder;
 
 /// Retrieves the dataset path from the `.env` file.
 pub fn get_dataset_path() -> Result<String, Box<dyn Error>> {
-  dotenv().ok(); // Load environment variables
-  env::var("DATASET_PATH").map_err(|_| "DATASET_PATH not set in .env".into())
+  dotenv().ok();
+
+  match env::var("DATASET_PATH") {
+    Ok(path) => Ok(path), // Return the environment variable value if set
+    Err(_) => {
+      let default_path = "./data/data.csv";
+      Ok(default_path.to_string())
+    }
+  }
 }
 
 /// Loads and parses the dataset using the `csv` library, skipping the header row.

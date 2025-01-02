@@ -118,16 +118,14 @@ make trainer
 make gui
 ```
 
+### Run the GUI webapp
+```bash
+make web
+```
+
 ### Clean the Workspace
 ```bash
 make clean
-```
-
-#### Clean Specific Components
-```bash
-make clean_gui
-make clean_trainer
-make clean_predictor
 ```
 
 ---
@@ -153,6 +151,8 @@ make clean_predictor
 1. Run the GUI:
    ```bash
    make gui
+   # or
+   make web
    ```
 2. Explore your dataset, adjust parameters, and watch the regression line and gradient descent come to life!
 
@@ -178,5 +178,5 @@ Contributions are welcome! Feel free to open issues or submit pull requests to e
 
 ---
 
-Enjoy using **Linear Regression with Gradient Descent**! 🚀 Let us know if you have any feedback or feature requests.
+Enjoy using **Linear Regression with Gradient Descent**! 🚀 Let me know if you have any feedback or feature requests.
 

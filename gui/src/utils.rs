@@ -1,10 +1,10 @@
+use egui::Color32;
 use num_format::{Locale, ToFormattedString};
-use plotters::prelude::RGBColor;
 
 /// Converts an `[f32; 3]` array representing a color into `RGBColor`.
 /// The input values should be in the range `[0.0, 1.0]`.
-pub fn to_rgb_color(color: [f32; 3]) -> RGBColor {
-  RGBColor(
+pub fn to_rgb_color(color: [f32; 3]) -> Color32 {
+  Color32::from_rgb(
     (color[0] * 255.0) as u8,
     (color[1] * 255.0) as u8,
     (color[2] * 255.0) as u8,

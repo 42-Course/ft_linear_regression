@@ -1,8 +1,6 @@
-use eframe::egui::{self, CentralPanel};
-use egui_plotter::EguiBackend;
 use linear_regression::linear_regression::LinearRegression;
 use crate::settings::{GridSettings, PlotSettings, SidebarSettings, SidebarTab};
-use crate::components::{Navbar, Sidebar, Plot};
+use crate::components::{Navbar, Sidebar, Plot, ModelErrorScreen};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -12,12 +10,17 @@ use crate::components::{Navbar, Sidebar, Plot};
 #[derive(Default)]
 pub struct App {
   show_sidebar: bool,
-  pub regression_model: Option<LinearRegression>, // LinearRegression instance
-  pub predictions: Vec<(f64, f64)>,               // Predictions for dataset
-  pub regression_line: Option<(f64, f64)>,
   pub sidebar_settings: SidebarSettings,
   pub grid_settings: GridSettings,
   pub plot_settings: PlotSettings,
+  #[serde(skip)]
+  pub error_message: Option<String>,
+  #[serde(skip)]
+  pub regression_model: Option<LinearRegression>, // LinearRegression instance
+   #[serde(skip)]
+  pub predictions: Vec<(f64, f64)>,               // Predictions for dataset
+  #[serde(skip)]
+  pub regression_line: Option<(f64, f64)>,
 }
 
 impl App {
@@ -34,15 +37,26 @@ impl App {
       return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
     }
 
-    let model = LinearRegression::new(None).ok();
+    let (model, error_message) = match LinearRegression::new(None) {
+      Ok(model) => {
+        (Some(model), None)
+      },
+      Err(err) => {
+        log::error!("Failed to initialize regression model: {}", err);
+        (None, Some(format!("Failed to initialize model: {}", err)))
+      }
+    };
+
+
     Self {
       show_sidebar: true,
-      regression_model: model,
-      predictions: Vec::new(),
-      regression_line: None,
       sidebar_settings: SidebarSettings::default(),
       grid_settings: GridSettings::new(),
       plot_settings: PlotSettings::new(),
+      error_message: error_message,
+      regression_model: model,
+      predictions: Vec::new(),
+      regression_line: None,
     }
   }
 
@@ -53,9 +67,14 @@ impl App {
         self.regression_model = Some(model);
         self.regression_line = None;
         self.predictions = Vec::new();
+        self.error_message = None;
       }
-      Err(e) => {
-        eprintln!("Failed to reload model: {}", e);
+      Err(err) => {
+        log::error!("Failed to initialize regression model: {}", err);
+        self.regression_model = None;
+        self.regression_line = None;
+        self.predictions = Vec::new();
+        self.error_message = Some(format!("Failed to initialize model: {}", err));
       }
     }
   }
@@ -130,7 +149,15 @@ impl eframe::App for App {
   /// Called each time the UI needs repainting, which may be many times per second.
   fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
     egui::TopBottomPanel::top("navbar").show(ctx, |ui| {
-      Navbar::render(ui, self);
+      ui.horizontal(|ui| {
+        ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+          Navbar::render(ui, self);
+        });
+        ui.add_space(ui.available_width());
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+          egui::widgets::global_theme_preference_buttons(ui);
+        });
+      });
     });
 
     egui::SidePanel::right("sidebar")
@@ -138,38 +165,14 @@ impl eframe::App for App {
         Sidebar::render(ui, self);
     });
 
-    // Plot::render(ctx, self);
-
-
-    // CentralPanel::default().show(ctx, |ui| {
-      // let root = EguiBackend::new(ui).into_drawing_area();
-      // root.fill(&WHITE).unwrap();
-      // let mut chart = ChartBuilder::on(&root)
-      //   .caption("y=x^2", ("sans-serif", 50).into_font())
-      //   .margin(5)
-      //   .x_label_area_size(30)
-      //   .y_label_area_size(30)
-      //   .build_cartesian_2d(-1f32..1f32, -0.1f32..1f32)
-      //   .unwrap();
-
-      // chart.configure_mesh().draw().unwrap();
-
-    // });
+    
+    egui::CentralPanel::default().show(ctx, |ui| {
+      if let Some(_) = self.regression_model {
+        Plot::render(ui, self);
+      } else {
+        ModelErrorScreen::render(ui, self);
+      }
+    });
+    self.plot_settings.need_auto_bounds = false;
   }
 }
-
-// egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-//   egui::menu::bar(ui, |ui| {
-//     let is_web = cfg!(target_arch = "wasm32");
-//     if !is_web {
-//       ui.menu_button("File", |ui| {
-//         if ui.button("Quit").clicked() {
-//           ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-//         }
-//       });
-//       ui.add_space(16.0);
-//     }
-
-//     egui::widgets::global_theme_preference_buttons(ui);
-//   });
-// });

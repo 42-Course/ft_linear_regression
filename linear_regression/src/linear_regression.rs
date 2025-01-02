@@ -14,7 +14,7 @@ impl LinearRegression {
   /// Creates a new LinearRegression model with an optional learning rate.
   pub fn new(learning_rate: Option<f64>) -> Result<Self, Box<dyn std::error::Error>> {
     let data = load_dataset()?;
-
+    
     Ok(Self {
       theta0: 0.0,
       theta1: 0.0,

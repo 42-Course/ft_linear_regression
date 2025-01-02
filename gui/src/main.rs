@@ -21,7 +21,7 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native(
-        "eframe template",
+        "ft_linear_regression",
         native_options,
         Box::new(|cc| Ok(Box::new(App::new(cc)))),
     )
