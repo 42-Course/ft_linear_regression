@@ -6,7 +6,6 @@ use crate::components::{Navbar, Sidebar, Plot, ModelErrorScreen};
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 
-
 #[derive(Default)]
 pub struct App {
   show_sidebar: bool,
@@ -32,32 +31,41 @@ impl App {
       tess_options.feathering = false;
     });
 
-    // Load previous app state (if any).
-    if let Some(storage) = cc.storage {
-      return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
-    }
-
-    let (model, error_message) = match LinearRegression::new(None) {
-      Ok(model) => {
-        (Some(model), None)
-      },
-      Err(err) => {
-        log::error!("Failed to initialize regression model: {}", err);
-        (None, Some(format!("Failed to initialize model: {}", err)))
-      }
-    };
-
-
-    Self {
+    let mut app = Self {
       show_sidebar: true,
       sidebar_settings: SidebarSettings::default(),
       grid_settings: GridSettings::new(),
       plot_settings: PlotSettings::new(),
-      error_message: error_message,
-      regression_model: model,
+      error_message: None,
+      regression_model: None,
       predictions: Vec::new(),
       regression_line: None,
+    };
+
+     // Load previous app state (if any) and override the default values.
+    if let Some(storage) = cc.storage {
+      if let Some(saved_app) = eframe::get_value::<Self>(storage, eframe::APP_KEY) {
+        // Update the fields that can be loaded from storage.
+        app.show_sidebar = saved_app.show_sidebar;
+        app.sidebar_settings = saved_app.sidebar_settings;
+        app.grid_settings = saved_app.grid_settings;
+        app.plot_settings = saved_app.plot_settings;
+      }
     }
+
+    // Initialize the regression model.
+    let (model, error_message) = match LinearRegression::new(None) {
+      Ok(model) => (Some(model), None),
+      Err(err) => {
+        log::error!("Failed to initialize regression model: {}", err);
+        (None, Some(format!("Failed to initialize model: {}", err)))
+      },
+    };
+
+    app.regression_model = model;
+    app.error_message = error_message;
+
+    app
   }
 
   /// Reloads the LinearRegression model and updates the state.

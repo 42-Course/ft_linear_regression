@@ -42,32 +42,11 @@ impl Sidebar {
     ui.checkbox(&mut grid_settings.lock_y_axis, "Lock Y-Axis").on_hover_text("When checked the Y axis is fixed, zoom wouldn't affect.");
     ui.separator();
     ui.horizontal(|ui| {
-      ui.label("Background Color:").on_hover_text("Grid Background Color.");
-      let mut color = grid_settings.background_color;
+      ui.label("Labels Color:").on_hover_text("Color of the grid lines.");
+      let mut color = grid_settings.labels_color;
       if ui.color_edit_button_rgb(&mut color).changed() {
-        grid_settings.background_color = color;
+        grid_settings.labels_color = color;
       }
-    });
-    ui.horizontal(|ui| {
-      ui.label("Grid Line Color:").on_hover_text("Color of the grid lines.");
-      let mut color = grid_settings.grid_line_color;
-      if ui.color_edit_button_rgb(&mut color).changed() {
-        grid_settings.grid_line_color = color;
-      }
-    });
-    ui.horizontal(|ui| {
-      ui.label("Grid Spacing:").on_hover_text("The space between the grid lines in pixels.");
-      let mut spacing = grid_settings.grid_spacing;
-      if ui.add(egui::Slider::new(&mut spacing, 5.0..=50.0)).changed() {
-        grid_settings.grid_spacing = spacing;
-      }
-    });
-    ui.horizontal(|ui| {
-      ui.label("Grid Line Weight:").on_hover_text("The thickness of the grid lines.");
-      let mut line_weight = grid_settings.grid_line_weight;
-      if ui.add(egui::Slider::new(&mut line_weight, 0.1..=5.0)).changed() {
-        grid_settings.grid_line_weight = line_weight;
-      } 
     });
     ui.separator();
     ui.checkbox(&mut grid_settings.ctrl_to_zoom, "Ctrl to zoom").on_hover_text("If unchecked, the behavior of the Ctrl key is inverted compared to the default controls\ni.e., scrolling the mouse without pressing any keys zooms the plot");
