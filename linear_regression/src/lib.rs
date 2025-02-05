@@ -1,5 +1,6 @@
 pub mod linear_regression;
 pub mod utils;
+pub mod normalization;
 
 #[cfg(test)]
 mod tests {

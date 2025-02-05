@@ -133,7 +133,7 @@ impl App {
   }
 
   /// Returns a reference to the dataset.
-  pub fn get_dataset(&self) -> &Vec<(f64, f64)> {
+  pub fn get_dataset(&self) -> Vec<(f64, f64)> {
     self.regression_model.as_ref().expect("Regression model is not initialized").get_dataset()
   }
 

@@ -6,7 +6,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
-  let mut model = LinearRegression::new(Some(0.001))?;
+  let mut model = LinearRegression::new(Some(1.0))?;
 
   let iterations = 42;
 

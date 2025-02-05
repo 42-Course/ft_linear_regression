@@ -5,28 +5,19 @@ use std::fs::File;
 use std::io::{self, BufRead, Write};
 use dotenv::dotenv;
 use csv::ReaderBuilder;
+use crate::normalization::NormalizationFactors;
 
 /// Retrieves the dataset path from the `.env` file.
 pub fn get_dataset_path() -> Result<String, Box<dyn Error>> {
   dotenv().ok();
 
-  match env::var("DATASET_PATH") {
-    Ok(path) => Ok(path), // Return the environment variable value if set
-    Err(_) => {
-      let default_path = "./data/data.csv";
-      Ok(default_path.to_string())
-    }
-  }
+  env::var("DATASET_PATH").or_else(|_| Ok("./data/data.csv".to_string()))
 }
 
 /// Loads and parses the dataset using the `csv` library, skipping the header row.
 pub fn load_dataset() -> Result<Vec<(f64, f64)>, Box<dyn Error>> {
-  let path = get_dataset_path()?; // Retrieve the dataset path
-
-  // Open the CSV file and parse it, skipping the headers
-  let mut reader = ReaderBuilder::new()
-    .has_headers(true)
-    .from_path(Path::new(&path))?;
+  let path = get_dataset_path()?;
+  let mut reader = ReaderBuilder::new().has_headers(true).from_path(Path::new(&path))?;
 
   let mut dataset = Vec::new();
   for result in reader.records() {
@@ -39,23 +30,24 @@ pub fn load_dataset() -> Result<Vec<(f64, f64)>, Box<dyn Error>> {
   Ok(dataset)
 }
 
-pub fn normalize_dataset(data: &[(f64, f64)]) -> Vec<(f64, f64)> {
-  let x_min = data.iter().map(|&(x, _)| x).fold(f64::INFINITY, f64::min);
-  let x_max = data.iter().map(|&(x, _)| x).fold(f64::NEG_INFINITY, f64::max);
-
+/// Normalizes both `km` and `price`.
+pub fn normalize_dataset(data: &[(f64, f64)], factors: &NormalizationFactors) -> Vec<(f64, f64)> {
   data.iter()
-    .map(|&(x, y)| ((x - x_min) / (x_max - x_min), y))
+    .map(|&(x, y)| (
+      (x - factors.x_min) / (factors.x_max - factors.x_min),
+      (y - factors.y_min) / (factors.y_max - factors.y_min)
+    ))
     .collect()
 }
 
 /// Retrieves the theta file path from the `.env` file.
-/// Creates it if it doesn't exist
+/// Creates it if it doesn't exist.
 pub fn get_theta_path() -> io::Result<String> {
   dotenv().ok();
-  let path = env::var("THETA_PATH").map_err(|_| io::Error::new(io::ErrorKind::NotFound, "THETA_PATH not set"))?;
+  let path = env::var("THETA_PATH").unwrap_or("./data/theta.txt".to_string());
 
-  if !std::path::Path::new(&path).exists() {
-    std::fs::File::create(&path)?;
+  if !Path::new(&path).exists() {
+    File::create(&path)?;
   }
 
   Ok(path)
@@ -72,18 +64,9 @@ pub fn load_params() -> io::Result<(f64, f64)> {
   let path = get_theta_path()?;
   let file = File::open(path)?;
   let line = io::BufReader::new(file).lines().next().unwrap_or(Ok("0.0,0.0".to_string()))?;
-  let params: Vec<f64> = line
-    .split(',')
-    .filter_map(|v| v.trim().parse::<f64>().ok())
-    .collect();
+  let params: Vec<f64> = line.split(',').filter_map(|v| v.trim().parse::<f64>().ok()).collect();
+  if params.len() != 2 {
+    return Err(io::Error::new(io::ErrorKind::InvalidData, "Theta file corrupt or missing values"));
+  }
   Ok((params[0], params[1]))
 }
-
-// let file = File::open(path)?;
-
-// It is equivalent to:
-
-// let file = match File::open(path) {
-//     Ok(f) => f,
-//     Err(e) => return Err(e),
-// };

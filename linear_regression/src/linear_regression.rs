@@ -1,5 +1,6 @@
-use crate::utils::{load_dataset};
+use crate::utils::{load_dataset, normalize_dataset};
 use serde::{Serialize, Deserialize};
+use crate::normalization::NormalizationFactors;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct LinearRegression {
@@ -8,34 +9,42 @@ pub struct LinearRegression {
   learning_rate: f64,
   data: Vec<(f64, f64)>,
   costs: Vec<f64>,
+  normalization: NormalizationFactors,
 }
 
 impl LinearRegression {
   /// Creates a new LinearRegression model with an optional learning rate.
   pub fn new(learning_rate: Option<f64>) -> Result<Self, Box<dyn std::error::Error>> {
     let data = load_dataset()?;
-    
+    let factors = NormalizationFactors::from_data(&data);
+    let normalized_data = normalize_dataset(&data, &factors);
+
     Ok(Self {
       theta0: 0.0,
       theta1: 0.0,
       learning_rate: learning_rate.unwrap_or(0.001),
-      data,
+      data: normalized_data,
       costs: Vec::new(),
+      normalization: factors,
     })
   }
 
   /// Trains the model using gradient descent.
   pub fn train(&mut self, iterations: usize) {
     let m = self.data.len() as f64;
+    if m == 0.0 {
+      eprintln!("Error: No dataset loaded.");
+      return;
+    }
 
     for i in 0..iterations {
-      // Compute the current cost before updating
       let current_cost = self.compute_cost();
 
-      // Pre-iteration checks
-      if current_cost.is_nan() || current_cost.is_infinite() {
+      // Stop if cost is NaN or if the reduction is negligible
+      if current_cost.is_nan() || current_cost.is_infinite() || 
+         (i > 0 && (self.costs[i - 1] - current_cost).abs() < 1e-6) {
         eprintln!(
-            "Iteration {}: Cost is NaN or infinite. Stopping training.",
+            "Iteration {}: Cost converged or is NaN. Stopping training.",
             i
         );
         break;
@@ -51,18 +60,22 @@ impl LinearRegression {
       }
 
       // Update θ₀ and θ₁
-      self.theta0 -= self.learning_rate * (1.0 / m) * sum_error_theta0;
-      self.theta1 -= self.learning_rate * (1.0 / m) * sum_error_theta1;
+      let alpha_div_m = self.learning_rate / m;
+      self.theta0 -= alpha_div_m * sum_error_theta0;
+      self.theta1 -= alpha_div_m * sum_error_theta1;
 
-      // Compute and save the cost
-      self.costs.push(self.compute_cost());
+      // Store cost history
+      self.costs.push(current_cost);
     }
-    println!("({:?}, {:?})", &self.theta0, &self.theta1);
   }
 
   /// Computes the cost function J(θ).
   pub fn compute_cost(&self) -> f64 {
     let m = self.data.len() as f64;
+    if m == 0.0 {
+      return f64::NAN;
+    }
+
     self.data
       .iter()
       .map(|&(x, y)| {
@@ -75,7 +88,9 @@ impl LinearRegression {
 
   /// Predicts the price for a given mileage.
   pub fn predict(&self, mileage: f64) -> f64 {
-    self.theta0 + self.theta1 * mileage
+    let normalized_x = (mileage - self.normalization.x_min) / (self.normalization.x_max - self.normalization.x_min);
+    let normalized_y = self.theta0 + self.theta1 * normalized_x;
+    self.normalization.denormalize_y(normalized_y)
   }
 
   /// Returns the model's parameters.
@@ -88,9 +103,20 @@ impl LinearRegression {
     self.theta0 = theta0;
     self.theta1 = theta1;
   }
+  
+  /// Returns a reference to the dataset.
+  pub fn get_normalized_dataset(&self) -> &Vec<(f64, f64)> {
+    &self.data
+  }
 
   /// Returns a reference to the dataset.
-  pub fn get_dataset(&self) -> &Vec<(f64, f64)> {
-    &self.data
+  pub fn get_dataset(&self) -> Vec<(f64, f64)> {
+    self.data
+      .iter()
+      .map(|&(x, y)| (
+        self.normalization.denormalize_x(x),
+        self.normalization.denormalize_y(y)
+      ))
+      .collect()
   }
 }
