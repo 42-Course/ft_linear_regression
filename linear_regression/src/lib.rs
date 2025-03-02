@@ -5,7 +5,7 @@ pub mod normalization;
 #[cfg(test)]
 mod tests {
   use super::linear_regression::LinearRegression;
-  use super::utils::{load_dataset, load_params, save_params};
+  use super::utils::{load_dataset_file, load_params, save_params};
 
   #[test]
   fn test_training_and_prediction() -> Result<(), Box<dyn std::error::Error>> {
@@ -19,7 +19,7 @@ mod tests {
 
   #[test]
   fn test_load_dataset() {
-    let dataset = load_dataset().expect("Failed to load dataset");
+    let dataset = load_dataset_file().expect("Failed to load dataset");
     assert_eq!(dataset.len(), 5);
     assert_eq!(dataset[0], (10000.0, 20000.0));
   }

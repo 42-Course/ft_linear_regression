@@ -9,15 +9,41 @@ impl Sidebar {
   /// Renders the sidebar tab and content.
   pub fn render(ui: &mut eframe::egui::Ui, app: &mut App) {
     ui.vertical(|ui| {
+
       Sidebar::render_tabs(ui, app);
+    
       ui.separator();
 
       match app.get_sidebar_current_tab() {
-        SidebarTab::GridSettings => Sidebar::render_grid_settings(ui, app),
-        SidebarTab::PlotSettings => Sidebar::render_plot_settings(ui, app),
+          SidebarTab::GridSettings => Sidebar::render_grid_settings(ui, app),
+          SidebarTab::PlotSettings => Sidebar::render_plot_settings(ui, app),
       }
+
+      ui.separator();
+
+      ui.group(|ui| {
+        ui.set_height(100.0);
+        ui.centered_and_justified(|ui| {
+            ui.add_space(15.0);
+            ui.heading("📊 Model Precision Metrics");
+            if let Some(mae) = app.mae {
+                ui.label(format!("MAE: {:.5}", mae));
+            }
+            if let Some(mse) = app.mse {
+                ui.label(format!("MSE: {:.5}", mse));
+            }
+            if let Some(rmse) = app.rmse {
+                ui.label(format!("RMSE: {:.5}", rmse));
+            }
+            if let Some(r2) = app.r2 {
+                ui.label(format!("R²: {:.5}", r2));
+            }
+            ui.add_space(15.0);
+        });
+      });
     });
   }
+
 
   /// Renders the tab selection at the top of the sidebar.
   fn render_tabs(ui: &mut eframe::egui::Ui, app: &mut App) {
@@ -90,11 +116,6 @@ impl Sidebar {
       }
     });
 
-    let mut show_error_lines = plot_settings.show_error_lines;
-    if ui.checkbox(&mut show_error_lines, "Show Error Lines").changed() {
-      plot_settings.show_error_lines = !plot_settings.show_error_lines;
-    }
-
     ui.horizontal(|ui| {
       ui.label("Error Line Color:");
       let mut color = plot_settings.error_line_color;
@@ -103,11 +124,6 @@ impl Sidebar {
       }
     });
 
-    let mut error_line_weight = plot_settings.error_line_weight;
-    if ui.add(egui::Slider::new(&mut error_line_weight, 0.5..=5.0).text("Error Line Weight")).changed() {
-      plot_settings.error_line_weight = error_line_weight;
-    }
-
     ui.horizontal(|ui| {
       ui.label("Regression Line Color:");
       let mut color = plot_settings.regression_line_color;
@@ -115,6 +131,11 @@ impl Sidebar {
         plot_settings.regression_line_color = color;
       }
     });
+
+    let mut error_line_weight = plot_settings.error_line_weight;
+    if ui.add(egui::Slider::new(&mut error_line_weight, 0.5..=5.0).text("Error Line Weight")).changed() {
+      plot_settings.error_line_weight = error_line_weight;
+    }
 
     let mut regression_line_weight = plot_settings.regression_line_weight;
     if ui.add(egui::Slider::new(&mut regression_line_weight, 0.5..=5.0).text("Regression Line Weight")).changed() {

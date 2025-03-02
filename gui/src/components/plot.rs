@@ -1,6 +1,6 @@
 use eframe::egui::{Event, Vec2};
 use crate::app::App;
-use egui_plot::{Legend, Points, PlotPoints, PlotBounds};
+use egui_plot::{Line, Legend, Points, PlotPoints, PlotBounds};
 use crate::utils::{to_rgb_color, format_price, format_km};
 
 pub struct Plot;
@@ -136,6 +136,43 @@ impl Plot {
       predictions.iter().map(|&(x, y)| [x, y]).collect()
     };
 
+    for (real, pred) in dataset_points.iter().zip(predictions_points.iter()) {
+      let error_line = vec![*real, *pred];
+
+      plot_ui.line(
+        Line::new(PlotPoints::from(error_line))
+          .color(to_rgb_color(plot_settings.error_line_color))
+          .width(plot_settings.error_line_weight)
+          .name("Error Line"),
+      );
+    }
+
+    let regression_line = if plot_settings.swap_axes {
+      app.swapped_regression_line
+    } else {
+      app.regression_line
+    };
+
+    if let Some((slope, intercept)) = regression_line {
+      let (x_min, x_max) = (-1_000_000f64, 1_000_000f64);
+
+      let y_min = slope * x_min + intercept;
+      let y_max = slope * x_max + intercept;
+
+      let regression_line_points: Vec<[f64; 2]> = if plot_settings.swap_axes {
+        vec![[y_min, x_min], [y_max, x_max]]
+      } else {
+        vec![[x_min, y_min], [x_max, y_max]]
+      };
+
+      plot_ui.line(
+        Line::new(PlotPoints::from(regression_line_points))
+          .color(to_rgb_color(plot_settings.regression_line_color))
+          .width(plot_settings.regression_line_weight)
+          .name("Regression Line"),
+      );
+    }
+
     // Render the dataset and predictions as points
     plot_ui.points(
       Points::new(PlotPoints::from(dataset_points))
@@ -150,6 +187,8 @@ impl Plot {
         .radius(3.0)
         .name("Prediction"),
     );
+
+
 
     if plot_settings.need_auto_bounds {
       plot_ui.set_plot_bounds(PlotBounds::from_min_max([x_min, y_min], [x_max, y_max]));

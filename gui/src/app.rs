@@ -20,6 +20,16 @@ pub struct App {
   pub predictions: Vec<(f64, f64)>,               // Predictions for dataset
   #[serde(skip)]
   pub regression_line: Option<(f64, f64)>,
+  #[serde(skip)]
+  pub swapped_regression_line: Option<(f64, f64)>,
+  #[serde(skip)]
+  pub mae: Option<f64>, // Mean Absolute Error
+  #[serde(skip)]
+  pub mse: Option<f64>, // Mean Squared Error
+  #[serde(skip)]
+  pub rmse: Option<f64>, // Root Mean Squared Error
+  #[serde(skip)]
+  pub r2: Option<f64>, // R² Score
 }
 
 impl App {
@@ -40,6 +50,11 @@ impl App {
       regression_model: None,
       predictions: Vec::new(),
       regression_line: None,
+      swapped_regression_line: None,
+      mae: None,
+      mse: None,
+      rmse: None,
+      r2: None,
     };
 
      // Load previous app state (if any) and override the default values.
@@ -76,12 +91,20 @@ impl App {
         self.regression_line = None;
         self.predictions = Vec::new();
         self.error_message = None;
+        self.mae = None;
+        self.mse = None;
+        self.rmse = None;
+        self.r2 = None;
       }
       Err(err) => {
         log::error!("Failed to initialize regression model: {}", err);
         self.regression_model = None;
         self.regression_line = None;
         self.predictions = Vec::new();
+        self.mae = None;
+        self.mse = None;
+        self.rmse = None;
+        self.r2 = None;
         self.error_message = Some(format!("Failed to initialize model: {}", err));
       }
     }
@@ -95,15 +118,64 @@ impl App {
     }
   }
 
+
+  /// Computes the least squares regression line (slope and intercept)
+  fn compute_regression_line(data: &Vec<(f64, f64)>) -> Option<(f64, f64)> {
+    let n = data.len() as f64;
+    if n < 2.0 {
+      return None; // Not enough data points to compute a regression line
+    }
+
+    let sum_x: f64 = data.iter().map(|(x, _)| x).sum();
+    let sum_y: f64 = data.iter().map(|(_, y)| y).sum();
+    let sum_xy: f64 = data.iter().map(|(x, y)| x * y).sum();
+    let sum_x2: f64 = data.iter().map(|(x, _)| x * x).sum();
+
+    let mean_x = sum_x / n;
+    let mean_y = sum_y / n;
+
+    let numerator = sum_xy - (sum_x * mean_y);
+    let denominator = sum_x2 - (sum_x * mean_x);
+
+    let slope = if denominator.abs() > f64::EPSILON {
+      numerator / denominator
+    } else {
+      0.0 // Avoid division by zero (e.g., vertical line case)
+    };
+
+    let intercept = mean_y - (slope * mean_x);
+    Some((slope, intercept))
+  }
+
   /// Updates predictions and regression line from the model.
   fn update_from_model(&mut self) {
     if let Some(model) = &self.regression_model {
-      self.predictions = model
-        .get_dataset()
-        .iter()
-        .map(|&(x, _)| (x, model.predict(x)))
-        .collect();
-      self.regression_line = Some(model.get_params());
+      let dataset = model.get_dataset();
+
+      // Ensure there are enough points to compute a regression line
+      if dataset.len() < 2 {
+        self.regression_line = None;
+        self.swapped_regression_line = None;
+        self.mae = None;
+        self.mse = None;
+        self.rmse = None;
+        self.r2 = None;
+        return;
+      }
+
+      // Generate predictions for the dataset
+      self.predictions = dataset.iter().map(|&(x, _)| (x, model.predict(x))).collect();
+
+      // Compute Normal Regression Line (y = mx + b)
+      self.regression_line = Self::compute_regression_line(&self.predictions);
+
+      let swapped_predictions = dataset.iter().map(|&(_, y)| (y, model.predict(y))).collect();
+      self.swapped_regression_line = Self::compute_regression_line(&swapped_predictions);
+      let (mae, mse, rmse, r2) = model.compute_precision();
+      self.mae = Some(mae);
+      self.mse = Some(mse);
+      self.rmse = Some(rmse);
+      self.r2 = Some(r2);
     }
   }
 
@@ -156,6 +228,7 @@ impl eframe::App for App {
 
   /// Called each time the UI needs repainting, which may be many times per second.
   fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    self.plot_settings.need_auto_bounds = false;
     egui::TopBottomPanel::top("navbar").show(ctx, |ui| {
       ui.horizontal(|ui| {
         ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
@@ -181,6 +254,5 @@ impl eframe::App for App {
         ModelErrorScreen::render(ui, self);
       }
     });
-    self.plot_settings.need_auto_bounds = false;
   }
 }
