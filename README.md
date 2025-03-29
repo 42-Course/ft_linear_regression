@@ -9,6 +9,10 @@ Welcome to **Linear Regression with Gradient Descent**, a Rust-based project des
 
 ***
 
+![Screenshot from 2025-03-29 16-57-22](https://github.com/user-attachments/assets/b7a1fab6-a2e2-40bb-8d58-f0dd661d8bab)
+
+![Screenshot from 2025-03-29 16-59-06](https://github.com/user-attachments/assets/97bb868d-70e5-4c5e-98ee-f59fdad4479b)
+
 ![Screencastfrom2025-02-0600-26-20-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/84a2bd0e-9970-42ae-8b20-461139e0906f)
 
 
@@ -16,6 +20,7 @@ Welcome to **Linear Regression with Gradient Descent**, a Rust-based project des
    <summary>Old version</summary>
 ![ScreencastFrom2024-12-3120-06-25-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/3f521a91-2c56-40a4-a386-1f3a1815e65a)
 </details>
+
 ---
 
 ## Project Overview
